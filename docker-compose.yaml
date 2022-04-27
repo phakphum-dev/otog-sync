@@ -1,0 +1,35 @@
+version: '3.9'
+services:
+  redis:
+    image: redis:6.2-alpine
+    container_name: otog-sync-redis
+    restart: always
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 5s
+      retries: 5
+    command: redis-server --save 20 1 --loglevel warning
+    volumes: 
+      - ./volumes/redis:/data
+    networks:
+      - otog-network
+  sync:
+    build: .
+    container_name: otog-sync
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - '6969:6969'
+    networks:
+      - otog-network
+
+networks:
+  otog-network:
+    name: otog-network
