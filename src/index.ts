@@ -4,10 +4,11 @@ import morgan from "morgan";
 import { ResultReq } from "./interfaces";
 import { taskQueue } from "./taskQueue";
 import { pool } from "./db";
+import { IpFilterMiddleware } from "./middlewares";
 
 dotenv.config();
 
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
 const app: Application = express();
 
@@ -15,23 +16,25 @@ const app: Application = express();
 
 app.use(express.json());
 
+app.use(IpFilterMiddleware);
+
 app.get("/task", async (req: Request, res: Response) => {
   const job = await taskQueue.add({ msg: "get waiting task" });
-  const graderId = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  const graderIp = req.socket.remoteAddress;
   const task = await job.finished();
   if (!task) {
     return res.status(404).send("");
   }
-  console.log(`Send submission id: ${task.id} to grader ip: ${graderId}`);
+  console.log(`Send submission id: ${task.id} to grader ip: ${graderIp}`);
   return res.json(task);
 });
 
 app.post("/result/:resultId", async (req: Request, res: Response) => {
   try {
-    const graderId = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+    const graderIp = req.socket.remoteAddress;
     const { resultId } = req.params;
     const result = req.body as ResultReq;
-    console.log(`Receive result id: ${resultId} from grader ip: ${graderId}`);
+    console.log(`Receive result id: ${resultId} from grader ip: ${graderIp}`);
     const currentDate = new Date();
     await pool.query(
       `UPDATE submission SET result = $1, score = $2, "timeUsed" = $3, 
@@ -53,6 +56,6 @@ app.post("/result/:resultId", async (req: Request, res: Response) => {
   }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running at http://localhost:${PORT}`);
 });

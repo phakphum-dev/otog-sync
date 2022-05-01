@@ -27,6 +27,8 @@ services:
         condition: service_healthy
     ports:
       - '6969:6969'
+    volumes: 
+      - ./whitelist.yaml:/usr/src/app/whitelist.yaml:rw
     networks:
       - otog-network
 
