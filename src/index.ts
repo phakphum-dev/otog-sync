@@ -38,7 +38,7 @@ app.post("/result/:resultId", async (req: Request, res: Response) => {
         status = $4, errmsg = $5, "updateDate" = $6 WHERE id = $7`,
       [
         result.result,
-        result.score,
+        Math.floor(result.score),
         result.timeUsed,
         result.status,
         result.errmsg,
